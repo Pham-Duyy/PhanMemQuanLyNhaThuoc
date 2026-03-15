@@ -19,6 +19,9 @@
                     <i class="bi bi-pencil me-1"></i> Chỉnh sửa
                 </a>
             @endif
+            <a href="{{ route('medicines.label', $medicine) }}" class="btn btn-info">
+                <i class="bi bi-tag me-1"></i> In nhãn
+            </a>
             <a href="{{ route('medicines.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại
             </a>

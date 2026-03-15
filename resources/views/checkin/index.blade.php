@@ -82,14 +82,15 @@
             align-items: center;
             gap: 14px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, .07);
-            cursor: pointer;
+            cursor: default;
             transition: all .15s;
             border: 2px solid transparent;
+            opacity: 0.8;
         }
 
         .staff-card:hover {
-            border-color: var(--teal);
-            transform: translateX(3px);
+            border-color: transparent;
+            transform: none;
         }
 
         .staff-card.active {
@@ -348,6 +349,12 @@
             color: #1E293B;
         }
 
+        .toast-info {
+            background: #fff;
+            border-left: 5px solid #0EA5A0;
+            color: #1E293B;
+        }
+
         @keyframes slideUp {
             from {
                 transform: translateY(20px);
@@ -423,12 +430,12 @@
 
     <div class="main">
 
-        {{-- ── Cột trái: Danh sách nhân viên ─────────────────────────── --}}
+        {{-- ── Cột trái: Danh sách nhân viên (read-only) ────────────────────────── --}}
         <div>
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="fw-bold mb-0">
                     <i class="bi bi-people-fill me-2 text-primary"></i>
-                    Nhân viên có ca hôm nay
+                    Danh sách nhân viên hôm nay
                     <span class="badge bg-primary ms-1">{{ $todayStaff->count() }}</span>
                 </h6>
                 <a href="{{ route('checkin.history') }}" class="btn btn-sm btn-outline-secondary">
@@ -608,22 +615,70 @@
         let selectedUserId = null;
         let pin = '';
         let mode = 'in'; // 'in' | 'out'
+        let selfCheckIn = false; // true = check in for self, false = check in for others
         const pharmacyId = {{ $pharmacyId }};
+        @auth
+            const currentUserId = {{ auth()->id() }};
+            const currentUserName = "{{ auth()->user()->name }}";
+        @endauth
+
+        // ── Self Check-in toggle ─────────────────────────────────────────────
+        function enableSelfCheckinMode() {
+            selfCheckIn = true;
+            selectedUserId = currentUserId;
+            pin = '';
+            updateDots();
+            
+            // Update header
+            document.getElementById('selectedName').textContent = currentUserName;
+            document.getElementById('selectedShift').textContent = 'Chấm công cho bản thân';
+            document.getElementById('pinHeader').style.background = 'linear-gradient(135deg, #0EA5A066, #0EA5A0)';
+            
+            // Remove highlight from staff cards
+            document.querySelectorAll('.staff-card').forEach(c => c.classList.remove('active'));
+            
+            // Show PIN pad and instructions
+            const noPinBar = document.getElementById('noPinBar');
+            const numpadEl = document.getElementById('numpadWrap');
+            
+            // Check if current user has PIN
+            const selfCard = document.querySelector(`[data-uid="${currentUserId}"]`);
+            const hasSelfPin = selfCard ? selfCard.dataset.haspin === '1' : true; // Assume has PIN if not in list
+            
+            if (!hasSelfPin) {
+                document.getElementById('pinHint').innerHTML =
+                    '<span style="color:#DC2626;font-weight:700;">⚠ Bạn chưa có mã PIN</span><br>' +
+                    '<span style="font-size:11px;">Liên hệ quản lý để <b>cài PIN</b> trước</span>';
+                if (noPinBar) noPinBar.style.display = '';
+                if (numpadEl) numpadEl.style.opacity = '0.35';
+            } else {
+                document.getElementById('pinHint').textContent = 'Nhập mã PIN 4–6 số của bạn';
+                if (noPinBar) noPinBar.style.display = 'none';
+                if (numpadEl) numpadEl.style.opacity = '1';
+            }
+            
+            setMode('in');
+        }
+
+        function toggleSelfCheckin() {
+            // Self-checkin is now mandatory — this function is disabled
+            // Kept for backward compatibility but does nothing
+            showToast('⚠️ Chế độ chấm công: Mỗi người phải chấm công cho bản thân', 'info');
+        }
 
         // ── Staff card click (dùng event delegation) ─────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
+            // Staff cards are now READ-ONLY (display only)
+            // All check-ins must be done via self-checkin
             document.querySelectorAll('.staff-card').forEach(function (card) {
-                card.style.cursor = 'pointer';
-                card.addEventListener('click', function () {
-                    const uid = this.dataset.uid;
-                    const name = this.dataset.name;
-                    const shift = this.dataset.shift;
-                    const color = this.dataset.color;
-                    const time = this.dataset.time;
-                    const hasPin = this.dataset.haspin === '1';
-                    selectStaff(uid, name, shift, color, time, hasPin);
-                });
+                card.style.cursor = 'default';
+                card.style.pointerEvents = 'none';
             });
+            
+            // Auto-enable self-checkin on page load
+            @auth
+                enableSelfCheckinMode();
+            @endauth
         });
 
         // ── Clock ────────────────────────────────────────────────────────────
@@ -714,11 +769,17 @@
 
         // ── Submit PIN ───────────────────────────────────────────────────────
         async function submitPin() {
-            if (!selectedUserId) { showToast('Vui lòng chọn nhân viên trước!', 'error'); return; }
+            // For self check-in, currentUserId should be set
+            const userToCheckIn = selfCheckIn ? currentUserId : selectedUserId;
+            
+            if (!userToCheckIn) { 
+                showToast('Vui lòng ' + (selfCheckIn ? 'loại bỏ "Chấm công cho bản thân" hoặc' : '') + ' chọn nhân viên trước!', 'error'); 
+                return; 
+            }
             if (pin.length < 4) { showToast('Mã PIN tối thiểu 4 số!', 'error'); return; }
 
             const url = mode === 'in' ? '/checkin/check-in' : '/checkin/check-out';
-            const body = { user_id: selectedUserId, pin, pharmacy_id: pharmacyId };
+            const body = { user_id: userToCheckIn, pin, pharmacy_id: pharmacyId };
             const csrfEl = document.querySelector('meta[name="csrf-token"]');
 
             try {
@@ -754,7 +815,11 @@
             const wrap = document.getElementById('toastWrap');
             const el = document.getElementById('toastMsg');
             el.className = 'toast-msg toast-' + type;
-            el.innerHTML = (type === 'success' ? '✅ ' : type === 'late' ? '⚠️ ' : '❌ ') + msg;
+            let icon = '✅ ';
+            if (type === 'late') icon = '⚠️ ';
+            else if (type === 'error') icon = '❌ ';
+            else if (type === 'info') icon = 'ℹ️ ';
+            el.innerHTML = icon + msg;
             wrap.style.display = 'block';
             toastTimer = setTimeout(() => { wrap.style.display = 'none'; }, 3500);
         }

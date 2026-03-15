@@ -240,6 +240,18 @@
                         </div>
                     @endif
 
+                    {{-- Barcode --}}
+                    @if($medicine->barcode)
+                        <div style="text-align: center; margin: 2mm 0; padding: 1.5mm 0; border-top: 0.5px solid #ddd; border-bottom: 0.5px solid #ddd;">
+                            <div style="height: 18mm; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                {!! \App\Helpers\BarcodeHelper::generate($medicine->barcode) !!}
+                            </div>
+                            <div style="font-size: 0.7em; margin-top: 0.5mm; color: #333; letter-spacing: 2px;">
+                                {{ $medicine->barcode }}
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- Bệnh nhân --}}
                     @if($patientName)
                         <div class="label-row">

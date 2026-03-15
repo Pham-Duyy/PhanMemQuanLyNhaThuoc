@@ -291,6 +291,22 @@ class PurchaseOrderController extends Controller
             'storage_instruction' => 'nullable|string|max:255',
         ]);
 
+        // ✅ Kiểm tra thuốc đã tồn tại chưa (bỏ qua soft delete)
+        $existingByName = \App\Models\Medicine::withTrashed()
+            ->where('pharmacy_id', $pid)
+            ->where('name', $validated['name'])
+            ->first();
+
+        if ($existingByName) {
+            return response()->json([
+                'success' => false,
+                'errors' => [
+                    'name' => 'Thuốc "' . $validated['name'] . '" đã tồn tại trong hệ thống. ' .
+                              ($existingByName->trashed() ? '(Hiện đang bị vô hiệu hóa)' : ''),
+                ]
+            ], 422);
+        }
+
         // Sinh mã thuốc tự động
         $count = \App\Models\Medicine::where('pharmacy_id', $pid)->count() + 1;
         $code = 'TH' . str_pad($count, 4, '0', STR_PAD_LEFT);

@@ -202,7 +202,7 @@ class ReportController extends Controller
             $adjustBefore = \App\Models\StockAdjustment::where('medicine_id', $medicineId)
                 ->whereHas('batch', fn($q) => $q->whereHas('medicine', fn($q2) =>
                     $q2->where('pharmacy_id', $pharmacyId)))
-                ->where(DB::raw('DATE(adjusted_at)'), '<', $from)
+                ->where(DB::raw('DATE(adjustment_date)'), '<', $from)
                 ->sum(DB::raw('quantity_after - quantity_before'));
 
             $openingStock = max(0, $importedBefore - $exportedBefore + $adjustBefore);
@@ -263,12 +263,12 @@ class ReportController extends Controller
                 ->where('medicine_id', $medicineId)
                 ->whereHas('batch', fn($q) => $q->whereHas('medicine', fn($q2) =>
                     $q2->where('pharmacy_id', $pharmacyId)))
-                ->whereBetween(DB::raw('DATE(adjusted_at)'), [$from, $to])
+                ->whereBetween(DB::raw('DATE(adjustment_date)'), [$from, $to])
                 ->get()
                 ->each(function ($adj) use (&$events) {
                     $change = $adj->quantity_after - $adj->quantity_before;
                     $events->push([
-                        'date' => \Carbon\Carbon::parse($adj->adjusted_at)->format('Y-m-d'),
+                        'date' => \Carbon\Carbon::parse($adj->adjustment_date)->format('Y-m-d'),
                         'type' => 'adjust',
                         'type_label' => 'Điều chỉnh',
                         'ref' => 'Lô: ' . ($adj->batch->batch_number ?? '?'),

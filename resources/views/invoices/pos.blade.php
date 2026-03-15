@@ -1708,8 +1708,15 @@
                     dd.innerHTML = '<div class="cdi" style="color:var(--muted);font-size:12px;">Không tìm thấy khách hàng</div>' + addBtn;
                     dd.style.display = ''; return;
                 }
-                dd.innerHTML = d.customers.map(c => `<div class="cdi" onclick="selCust(${JSON.stringify(JSON.stringify(c))})"><div class="dn">${c.name}</div><div class="dm">📞 ${c.phone || '—'}${c.current_debt > 0 ? ` · <span style="color:var(--danger)">Nợ: ${fmt(c.current_debt)}</span>` : ''}</div></div>`).join('') + addBtn;
+                dd.innerHTML = d.customers.map(c => `<div class="cdi" data-customer='${JSON.stringify(c)}'><div class="dn">${c.name}</div><div class="dm">📞 ${c.phone || '—'}${c.current_debt > 0 ? ` · <span style="color:var(--danger)">Nợ: ${fmt(c.current_debt)}</span>` : ''}</div></div>`).join('') + addBtn;
                 dd.style.display = '';
+                // Attach event listeners
+                dd.querySelectorAll('.cdi[data-customer]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        try { selCustObj(JSON.parse(el.getAttribute('data-customer'))); } 
+                        catch (err) { console.error('Parse customer error:', err); }
+                    });
+                });
             } catch (err) {
                 console.error('Customer search error:', err);
                 dd.innerHTML = '<div class="cdi" style="color:red;font-size:12px;">Không thể kết nối — kiểm tra mạng</div>';

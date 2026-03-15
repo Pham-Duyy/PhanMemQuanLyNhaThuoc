@@ -290,7 +290,7 @@
                         <th style="min-width:220px;">Tên thuốc</th>
                         <th style="width:90px;">ĐVT</th>
                         <th style="width:100px;">SL đặt</th>
-                        <th style="width:130px;">Giá nhập (đ)</th>
+                        <th style="width:130px;">Giá nhập (đ)</th>z
                         <th style="width:80px;">CK (%)</th>
                         <th style="width:130px;" class="text-end">Thành tiền</th>
                         <th style="width:140px;">Lô / HSD</th>

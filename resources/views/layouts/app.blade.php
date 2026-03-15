@@ -578,14 +578,19 @@
                         <i class="bi bi-calendar-heart"></i> Lịch của tôi
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('checkin.*') ? 'active' : '' }}"
-                        href="{{ route('checkin.index') }}" style="{{ request()->routeIs('checkin.index') ? '' : '' }}">
-                        <i class="bi bi-qr-code-scan"></i> Chấm công PIN
-                    </a>
-                </li>
             </ul>
         @endif
+
+        {{-- CHẤM CÔNG PIN (ai cũng có thể dùng - không cần quyền user.view) --}}
+        <div class="sidebar-section">Nhân viên</div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('checkin.*') ? 'active' : '' }}"
+                    href="{{ route('checkin.index') }}">
+                    <i class="bi bi-qr-code-scan"></i> Chấm công PIN
+                </a>
+            </li>
+        </ul>
 
         {{-- Logout --}}
         <div style="padding: 16px 10px 24px;">
